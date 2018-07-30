@@ -106,10 +106,6 @@ class ConvertToLearnosityService
             $dirName = $tempDirectoryParts[count($tempDirectoryParts)-1];
             $results = $this->convertQtiContentPackagesInDirectory(dirname($dir), $dirName);
 
-            // if (!isset($results['qtiitems'])) {
-            //     continue;
-            // }
-
             $this->updateJobManifest($finalManifest, $results);
             $this->persistResultsFile($results, realpath($this->outputPath) . '/' . $this->rawPath . '/' . $dirName);
         }
@@ -142,7 +138,9 @@ class ConvertToLearnosityService
      */
     private function convertQtiContentPackagesInDirectory($sourceDirectory, $relativeSourceDirectoryPath)
     {
-        $results = [];
+        $results = [
+            'qtiitems' => [],
+        ];
 
         $manifestFinder = new Finder();
         $manifestFinderPath = $manifestFinder->files()->in($sourceDirectory)->name('imsmanifest.xml');
@@ -556,6 +554,10 @@ class ConvertToLearnosityService
      */
     private function updateJobManifest(array &$manifest, array $results)
     {
+        if (empty($results['qtiitems'])) {
+            return;
+        }
+
         foreach ($results['qtiitems'] as &$itemResult) {
             // Log ignored items
             if (!isset($itemResult['item'])) {
