@@ -25,7 +25,9 @@ class ItemBodyBuilder
             return $this->buildItemBodySimple($interactions);
         }
         try {
+            
             return $this->buildItemBodyWithItemContent($interactions, $content, $questionType);
+            
             // If anything fails, <itemBody> can't be mapped due to whatever reasons
             // Probably simply due to its being wrapped in a tag which only accept inline content
             // Simply build it without considering items` content and put the content on the top
@@ -114,8 +116,10 @@ class ItemBodyBuilder
                 $questionReference = trim(str_replace('question-', '', $questionReference));
 
                 // Build the actual interaction
-                $interaction = $interactions[$questionReference]['interaction'];
-                if (isset($interactions[$questionReference]['extraContent'])) {
+                //print_r($interactions);
+                foreach($interactions as $interaction) {
+                //$interaction = $interactions[$questionReference]['interaction'];
+                if (isset($interaction['extraContent'])) {
                     // In case of shorttext and clozetext its throwing error and closing div tag above the interaction
                     $questionTypeArr = ['shorttext', 'clozetext', 'clozedropdown'];
                     if (!in_array($questionType, $questionTypeArr)) {
@@ -126,6 +130,7 @@ class ItemBodyBuilder
                 $content->attach($interaction);
 				$replacement = ContentCollectionBuilder::buildContent($currentContainer, $content)->current();
 				$currentContainer->getComponents()->replace($component, $replacement);
+                }
             }
         }
 
@@ -133,7 +138,6 @@ class ItemBodyBuilder
         $componentsWithinDiv = $divWrapper->getComponents();
         $itemBody = new ItemBody();
         $itemBody->setContent(ContentCollectionBuilder::buildBlockCollectionContent($componentsWithinDiv));
-
         return $itemBody;
     }
 
@@ -171,9 +175,9 @@ class ItemBodyBuilder
 
         foreach ($spanTag as $span) {
             $questionReference = trim(str_replace('learnosity-response question-', '', $span->getAttribute('class')));
-            if (!isset($interactions[$questionReference])) {
+            /*if (!isset($interactions[$questionReference])) {
                 $span->parentNode->removeChild($span);
-            }
+            }*/
         }
 
         foreach ($featureSpanTag as $span) {

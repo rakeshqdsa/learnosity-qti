@@ -18,6 +18,7 @@ class QtiMarshallerUtil
 
     public static function unmarshallElement($string)
     {
+        $string = str_replace('&', 'and', $string);
         try {
             libxml_use_internal_errors(true);
 

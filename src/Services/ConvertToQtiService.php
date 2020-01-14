@@ -260,6 +260,7 @@ class ConvertToQtiService
         $features = $json['features'];
         $tags = $json['tags'];
         $itemReference = $json['reference'];
+        
         if (!empty($json['questions']) && (sizeof($features)>=1)) {
             $referenceArray = $this->getReferenceArray($json);
             foreach ($json['questions'] as $question) :
@@ -293,10 +294,12 @@ class ConvertToQtiService
         }
         if (!empty($json['questions']) && empty($json['features'])) {
             foreach ($json['questions'] as $question) {
+                
                 $question['content'] = $content;
                 $question['itemreference'] = $itemReference;
                 $question['feature'] = [];
                 if (in_array($question['data']['type'], LearnosityExportConstant::$supportedQuestionTypes)) {
+                    echo "Converting ".$question['reference']." into QTI\n";
                     $result = Converter::convertLearnosityToQtiItem($question);
                     $result[0] = str_replace('/vendor/learnosity/itembank/', '', $result[0]);
                     $result[0] = str_replace('xmlns:default="http://www.w3.org/1998/Math/MathML"', '', $result[0]);
@@ -336,6 +339,7 @@ class ConvertToQtiService
                 }
             }
         }
+        
         return [
             'qti'  => $finalXml,
             'json' => $json,
@@ -520,6 +524,7 @@ class ConvertToQtiService
         if ($this->dryRun) {
             return;
         }
+        
         $this->output->writeln("\n<info>" . static::INFO_OUTPUT_PREFIX . "Writing conversion results: " . $outputFilePath . '.json' . "</info>\n");
         foreach ($results as $result) {
             if (!empty($result['qti'])) {
@@ -547,6 +552,7 @@ class ConvertToQtiService
     {
         $resources = array();
         $featureArray = array();
+        $resourcesArray = array();
         $additionalFileReferenceInfo = $this->getAdditionalFileInfoForManifestResource($results);
         foreach ($results as $result) {
             if (!empty($result['json']['questions'])) {
@@ -711,8 +717,12 @@ class ConvertToQtiService
      */
     private function getAdditionalFileInfoForManifestResource(array $results)
     {
-        $learnosityManifestJson = json_decode(file_get_contents($this->inputPath . '/manifest.json'));
         $additionalFileInfoArray = array();
+        if(!file_exists($this->inputPath . '/manifest.json')) {
+            return $additionalFileInfoArray;
+        }
+        $learnosityManifestJson = json_decode(file_get_contents($this->inputPath . '/manifest.json'));
+        
         if (isset($learnosityManifestJson->assets->items)) {
             $activityArray = $learnosityManifestJson->assets->items;
             foreach ($activityArray as $itemReference => $itemValue) {
