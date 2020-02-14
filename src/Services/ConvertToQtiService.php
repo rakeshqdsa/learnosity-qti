@@ -1,5 +1,6 @@
 <?php
 namespace LearnosityQti\Services;
+
 use DOMDocument;
 use DOMElement;
 use Exception;
@@ -19,9 +20,12 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\Iterator\RecursiveDirectoryIterator;
 use Symfony\Component\Finder\SplFileInfo;
 use ZipArchive;
+
 class ConvertToQtiService
 {
+
     use JobDataTrait;
+
     const RESOURCE_TYPE_ITEM = 'imsqti_item_xmlv2p1';
     const INFO_OUTPUT_PREFIX = '';
     const CONVERT_LOG_FILENAME = 'convert-to-qti.log';
@@ -32,6 +36,8 @@ class ConvertToQtiService
     const IMS_IMSMD_LOCATION = 'http://ltsc.ieee.org/xsd/LOM';
     const IMS_IMSQTI_LOCATION = 'http://www.imsglobal.org/xsd/imsqti_metadata_v2p1';
     const IMS_XSI_LOCATION = 'http://www.w3.org/2001/XMLSchema-instance';
+    const AB_STANDARD_CSV_FILE_PATH = '/home/qainfotech/ICEV/ICV.csv';
+
     protected $inputPath;
     protected $outputPath;
     protected $output;
@@ -39,30 +45,32 @@ class ConvertToQtiService
     protected $organisationId;
     protected $itemReferences;
     /* Runtime options */
-    protected $dryRun                     = false;
-    protected $shouldAppendLogs           = false;
+    protected $dryRun = false;
+    protected $shouldAppendLogs = false;
     protected $shouldGuessItemScoringType = true;
-    protected $shouldUseManifest          = true;
+    protected $shouldUseManifest = true;
     /* Job-specific configurations */
     // Overrides identifiers to be the same as the filename
     protected $useFileNameAsIdentifier = false;
     // Uses the identifier found in learning object metadata if available
-    protected $useMetadataIdentifier   = true;
+    protected $useMetadataIdentifier = true;
     // Resource identifiers sometimes (but not always) match the assessmentItem identifier, so this can be useful
-    protected $useResourceIdentifier   = false;
+    protected $useResourceIdentifier = false;
     private static $instance = null;
+
     private function __construct($inputPath, $outputPath, OutputInterface $output, $format, $organisationId = null)
     {
-        $this->inputPath      = $inputPath;
-        $this->outputPath     = $outputPath;
-        $this->output         = $output;
-        $this->format         = $format;
+        $this->inputPath = $inputPath;
+        $this->outputPath = $outputPath;
+        $this->output = $output;
+        $this->format = $format;
         $this->organisationId = $organisationId;
-        $this->finalPath      = 'final';
-        $this->logPath        = 'log';
-        $this->rawPath        = 'raw';
+        $this->finalPath = 'final';
+        $this->logPath = 'log';
+        $this->rawPath = 'raw';
         $this->itemReferences = array();
     }
+
     // The object is created from within the class itself
     // only if the class has no instance.
     public static function initClass($inputPath, $outputPath, OutputInterface $output, $organisationId = null)
@@ -72,19 +80,23 @@ class ConvertToQtiService
         }
         return self::$instance;
     }
+
     // Return instance of the class
     public static function getInstance()
     {
         return self::$instance;
     }
+
     public function getInputPath()
     {
         return $this->inputPath;
     }
+
     public function getFormat()
     {
         return $this->format;
     }
+
     public function process()
     {
         $errors = $this->validate();
@@ -106,6 +118,7 @@ class ConvertToQtiService
         $this->tearDown();
         return $result;
     }
+
     /**
      * Creates various multimedia directory for stroing image,audio,video and qti xml
      * files
@@ -121,6 +134,7 @@ class ConvertToQtiService
         FileSystemHelper::createDirIfNotExists($basePath . '/' . LearnosityExportConstant::SHARED_PASSAGE_FOLDER_NAME);
         $this->copyAllAssetFiles($this->inputPath . '/' . 'assets', $basePath);
     }
+
     /**
      * Copy each files from assets folder to their respective folder
      *
@@ -139,6 +153,7 @@ class ConvertToQtiService
             }
         }
     }
+
     /**
      * This function will copy the files from source folder to destination folder
      *
@@ -159,6 +174,7 @@ class ConvertToQtiService
             $this->output->writeln("<error>Media Type not supported only audio, video and image are supported</error>");
         }
     }
+
     /**
      * Decorate the IMS root element of the Manifest with the appropriate
      * namespaces and schema definition.
@@ -173,6 +189,7 @@ class ConvertToQtiService
         $rootElement->setAttribute("xmlns:xsi", static::IMS_XSI_LOCATION);
         $rootElement->setAttribute("xsi:schemaLocation", static::IMS_XSD_LOCATION);
     }
+
     /**
      * Performs a conversion on each directory (one level deep)
      * inside the given source directory.
@@ -196,6 +213,7 @@ class ConvertToQtiService
         $this->flushJobManifest($finalManifest, $results);
         $this->createIMSContentPackage(realpath($this->outputPath) . '/' . $this->rawPath . '/');
     }
+
     /**
      * Performs a conversion on QTI content packages found in the given root source directory.
      *
@@ -210,6 +228,7 @@ class ConvertToQtiService
         $itemContent = file_get_contents($file);
         return $this->convertAssessmentItem(json_decode($itemContent, true));
     }
+
     // Traverse the -i option and find all paths with files
     private function parseInputFolders()
     {
@@ -242,6 +261,7 @@ class ConvertToQtiService
         }
         return $folders;
     }
+
     /**
      * Converts Learnosity JSON to QTI
      *
@@ -260,7 +280,7 @@ class ConvertToQtiService
         $features = $json['features'];
         $tags = $json['tags'];
         $itemReference = $json['reference'];
-        if (!empty($json['questions']) && (sizeof($features)>=1)) {
+        if (!empty($json['questions']) && (sizeof($features) >= 1)) {
             $referenceArray = $this->getReferenceArray($json);
             foreach ($json['questions'] as $question) :
                 $question['content'] = $content;
@@ -337,11 +357,12 @@ class ConvertToQtiService
             }
         }
         return [
-            'qti'  => $finalXml,
+            'qti' => $finalXml,
             'json' => $json,
             'tags' => $tagsArray
         ];
     }
+
     /**
      * Flush and write the given job manifest.
      *
@@ -366,6 +387,7 @@ class ConvertToQtiService
         $outputFilePath = realpath($this->outputPath) . '/' . $this->rawPath . '/';
         file_put_contents($outputFilePath . '/' . $manifestFileBasename, $xml);
     }
+
     /**
      * Create and zip all the files in specified folder .
      *
@@ -394,6 +416,7 @@ class ConvertToQtiService
         // Zip archive will be created only after closing object
         $zip->close();
     }
+
     /**
      * This function is used to add the imsmanifest matadata.
      *
@@ -432,6 +455,7 @@ class ConvertToQtiService
         $manifestMetadata->appendChild($imsMetaMetaDataSchema);
         return $manifestMetadata;
     }
+
     /**
      * This function is used for add organization info in manifest file.
      *
@@ -444,6 +468,21 @@ class ConvertToQtiService
         $organization = $imsManifestXml->createElement("organizations");
         return $organization;
     }
+
+    private function readABStandardCSVFile()
+    {
+        $file = self::AB_STANDARD_CSV_FILE_PATH;
+        $dataArray = array();
+        if (($h = fopen($file, "r")) !== FALSE) {
+            // Convert each line into the local $data variable
+            while (($data = fgetcsv($h)) !== FALSE) {
+                $dataArray[$data[0]] = str_replace(';', ',', $data[3]);
+            }
+            fclose($h);
+        }
+        return $dataArray;
+    }
+
     /**
      * This function is used to add resource information in manifest xml file.
      *
@@ -457,17 +496,20 @@ class ConvertToQtiService
         $resources = $imsManifestXml->createElement("resources");
         $resourcesContents = $manifestContent->getResources();
         $i = 0;
+        $ABdata = $this->readABStandardCSVFile();
+        
         foreach ($resourcesContents as $index => $resourcesContent) {
             foreach ($resourcesContent as $indexResource => $resourceContent) {
                 $resource = $imsManifestXml->createElement("resource");
                 $resource->setAttribute("identifier", $resourceContent->getIdentifier());
                 $resource->setAttribute("type", $resourceContent->getType());
                 $resource->setAttribute("href", $resourceContent->getHref());
+
                 if (isset($results[$index]) && !empty($results[$index]) && !empty($results[$index]['tags'][$results[$index]['json']['questions'][$indexResource]['reference']])) {
                     $metadata = $imsManifestXml->createElement("metadata");
                     $tagsArray = $results[$index]['tags'][$results[$index]['json']['questions'][$indexResource]['reference']];
                     if (is_array($tagsArray) && sizeof($tagsArray) > 0) {
-                        $resourceMatadata = $this->addResourceMetaDataInfo($imsManifestXml, $tagsArray);
+                        $resourceMatadata = $this->addResourceMetaDataInfo($imsManifestXml, $tagsArray, $resourceContent->getDependencies()[0], $ABdata);
                         $metadata->appendChild($resourceMatadata);
                     }
                     $resource->appendChild($metadata);
@@ -484,6 +526,7 @@ class ConvertToQtiService
         }
         return $resources;
     }
+
     /**
      * Returns the base template for job manifests consumed by this job.
      *
@@ -496,6 +539,7 @@ class ConvertToQtiService
         $manifest->setImsManifestMetaData($this->createImsManifestMetaData());
         return $manifest;
     }
+
     /**
      * This is used for adding manifestmetadata in ims manifest xml file.
      *
@@ -509,6 +553,7 @@ class ConvertToQtiService
         $manifestMetaData->setTitle("QTI 2.1 Conversion Data");
         return $manifestMetaData;
     }
+
     /**
      * Writes a given results file to the specified output path.
      *
@@ -536,6 +581,7 @@ class ConvertToQtiService
             }
         }
     }
+
     /**
      * Updates a given job manifest in place with the contents of a specified
      * job partial result object.
@@ -556,8 +602,10 @@ class ConvertToQtiService
                 $resourcesArray[] = $this->addFeatureReference($result['json']['features'], $result, $additionalFileReferenceInfo);
             }
         }
+        
         return $resourcesArray;
     }
+
     private function addQuestionReference($questions, $result, $additionalFileReferenceInfo)
     {
         $resources = array();
@@ -565,9 +613,10 @@ class ConvertToQtiService
             foreach ($result['qti']['questions'] as $question) {
                 $files = array();
                 $resource = new Resource();
-                $resource->setIdentifier('i'.$question['2']);
-                $resource->setType(Resource::TYPE_PREFIX_ITEM."xmlv2p1");
-                $resource->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $question['2'].".xml");
+                $resource->setIdentifier('i' . $question['2']);
+                $resource->setType(Resource::TYPE_PREFIX_ITEM . "xmlv2p1");
+                $resource->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $question['2'] . ".xml");
+                $resource->setDependencies(array($result['json']['reference']));
                 if (array_key_exists($question['2'], $additionalFileReferenceInfo)) {
                     $files = $this->addAdditionalFileInfo($additionalFileReferenceInfo[$question['2']], $files);
                 }
@@ -578,7 +627,7 @@ class ConvertToQtiService
                     $files = $this->addAdditionalFileInfo($additionalFileReferenceInfo[$question['3']['features']], $files);
                 }
                 $file = new File();
-                $file->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $question['2'].".xml");
+                $file->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $question['2'] . ".xml");
                 $files[] = $file;
                 $resource->setFiles($files);
                 $resources[] = $resource;
@@ -586,6 +635,7 @@ class ConvertToQtiService
         }
         return $resources;
     }
+
     private function addFeatureReference($features, $result, $additionalFileReferenceInfo)
     {
         $resources = array();
@@ -593,14 +643,14 @@ class ConvertToQtiService
             if (!empty($result['qti'])) {
                 $files = array();
                 $resource = new Resource();
-                $resource->setIdentifier('i'.$feature['reference']);
-                $resource->setType(Resource::TYPE_PREFIX_ITEM."xmlv2p1");
-                $resource->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $feature['reference'].".xml");
+                $resource->setIdentifier('i' . $feature['reference']);
+                $resource->setType(Resource::TYPE_PREFIX_ITEM . "xmlv2p1");
+                $resource->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $feature['reference'] . ".xml");
                 if (array_key_exists($feature['reference'], $additionalFileReferenceInfo)) {
                     $files = $this->addAdditionalFileInfo($additionalFileReferenceInfo[$feature['reference']], $files);
                 }
                 $file = new File();
-                $file->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $feature['reference'].".xml");
+                $file->setHref(LearnosityExportConstant::DIRNAME_ITEMS . '/' . $feature['reference'] . ".xml");
                 $files[] = $file;
                 $resource->setFiles($files);
                 $resources[] = $resource;
@@ -608,6 +658,7 @@ class ConvertToQtiService
         }
         return $resources;
     }
+
     private function addFeatureFilesInfo($featureArray, array $files)
     {
         foreach ($featureHtmlArray as $featureId => $featureHtml) {
@@ -619,6 +670,7 @@ class ConvertToQtiService
         }
         return $files;
     }
+
     /**
      * This is used to add shared passage html file in manifest json file
      *
@@ -637,6 +689,7 @@ class ConvertToQtiService
         }
         return $files;
     }
+
     /**
      * This is used for adding metadata for each resource
      *
@@ -644,7 +697,7 @@ class ConvertToQtiService
      * @param array() $tagsArray array of tags from learnosity manifest json
      * @return DOMElement LOM object of resource meta data
      */
-    private function addResourceMetaDataInfo(DOMDocument $imsManifestXml, $tagsArray)
+    private function addResourceMetaDataInfo(DOMDocument $imsManifestXml, $tagsArray, $itemIdentifier = null, $ABDataArray = array())
     {
         $imsmdLom = $imsManifestXml->createElement('imsmd:lom');
         $imsmdClassification = $imsManifestXml->createElement('imsmd:classification');
@@ -661,13 +714,27 @@ class ConvertToQtiService
             $taxOn = $imsManifestXml->createElement('imsmd:taxon');
             $imsmdEntry = $imsManifestXml->createElement('imsmd:entry');
             $tagsValues = implode(',', $tagValues);
-            $imsmdEntry->appendChild($imsManifestXml->createElement('msmd:string', $tagsValues));
+            $imsmdEntry->appendChild($imsManifestXml->createElement('imsmd:string', $tagsValues));
+            $taxOn->appendChild($imsmdEntry);
+            $taxonPath->appendChild($taxOn);
+            $imsmdClassification->appendChild($taxonPath);
+        }
+        if (sizeof($ABDataArray) > 0 && $ABDataArray[$itemIdentifier] != '') {
+            $taxonPath = $imsManifestXml->createElement('imsmd:taxonPath');
+            $imsmdSource = $imsManifestXml->createElement('imsmd:source');
+            $imsmdSource->appendChild($imsManifestXml->createElement('imsmd:string', 'ABStandardGUID'));
+            $taxonPath->appendChild($imsmdSource);
+            $taxOn = $imsManifestXml->createElement('imsmd:taxon');
+            $imsmdEntry = $imsManifestXml->createElement('imsmd:entry');
+            $tagsValues = implode(',', $tagValues);
+            $imsmdEntry->appendChild($imsManifestXml->createElement('imsmd:string', $ABDataArray[$itemIdentifier]));
             $taxOn->appendChild($imsmdEntry);
             $taxonPath->appendChild($taxOn);
             $imsmdClassification->appendChild($taxonPath);
         }
         return $imsmdLom;
     }
+
     /**
      * Add any additional file info is associated with resource
      *
@@ -688,6 +755,7 @@ class ConvertToQtiService
         }
         return $files;
     }
+
     private function getAssetHref($fileName, $mimeType)
     {
         $mediaFormatArray = explode('/', $mimeType);
@@ -704,6 +772,7 @@ class ConvertToQtiService
         }
         return $href;
     }
+
     /**
      * This function will add additional file info in resource part of manifest xml
      *
@@ -741,9 +810,12 @@ class ConvertToQtiService
         }
         return $additionalFileInfoArray;
     }
+
     private function tearDown()
     {
+        
     }
+
     private function validate()
     {
         $errors = [];
@@ -753,12 +825,13 @@ class ConvertToQtiService
         }
         return $errors;
     }
+
     private function getReferenceArray($json)
     {
         $content = strip_tags($json['content'], "<span>");
         $contentArr = explode('</span>', $content);
         $referenceArr = [];
-        for ($i=0; $i< sizeof($contentArr); $i++) {
+        for ($i = 0; $i < sizeof($contentArr); $i++) {
             if (strpos($contentArr[$i], 'feature')) {
                 $featureReference = trim(str_replace('<span class="learnosity-feature feature-', '', $contentArr[$i]));
                 $featureReference = trim(str_replace('">', "", $featureReference));
@@ -774,6 +847,7 @@ class ConvertToQtiService
         }
         return $referenceArr;
     }
+
     private function getFeatureReference($questionReference, $referenceArray)
     {
         $featureReference = '';
@@ -787,6 +861,7 @@ class ConvertToQtiService
         }
         return $featureReference;
     }
+
     private function getFeature($featureReference, $features)
     {
         $featureArray = [];

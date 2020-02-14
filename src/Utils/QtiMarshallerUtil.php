@@ -18,6 +18,9 @@ class QtiMarshallerUtil
 
     public static function unmarshallElement($string)
     {
+        $string  = preg_replace('/<!--(.|\s)*?-->/', '', $string);
+        //$string = str_replace("<p><!--![endif]----></p>", '', $string);
+        //$string = str_replace('<!--EndFragment-->', '', $string);
         try {
             libxml_use_internal_errors(true);
 
