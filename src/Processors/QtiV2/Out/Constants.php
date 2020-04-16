@@ -5,6 +5,7 @@ namespace LearnosityQti\Processors\QtiV2\Out;
 class Constants
 {
     public static $supportedQuestionTypes = [
+        'association',
         'mcq',
         'shorttext',
         'orderlist',
