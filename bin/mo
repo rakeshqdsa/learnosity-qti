@@ -3,9 +3,9 @@
 
 foreach (
     [
-        __DIR__ . '/../../../../vendor/autoload.php',
-        __DIR__ . '/../../autoload.php',
         __DIR__ . '/../vendor/autoload.php',
+        __DIR__ . '/../../autoload.php',
+       	__DIR__ . '/../vendor/autoload.php',
         __DIR__ . '/vendor/autoload.php'
     ] as $file
 ) {
@@ -14,7 +14,7 @@ foreach (
         break;
     }
 }
-
+//print_r(AUTOLOAD_PATH);exit;
 unset($file);
 
 if (!defined('AUTOLOAD_PATH')) {
