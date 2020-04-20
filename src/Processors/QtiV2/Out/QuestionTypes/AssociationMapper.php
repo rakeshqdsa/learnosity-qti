@@ -25,13 +25,14 @@ class AssociationMapper extends AbstractQuestionTypeMapper
 
         $feedbackOptions = [];
         $metadata = $question->get_metadata();
+    var_dump($metadata);die;
         if (isset($metadata)) {
             if (!empty($metadata->get_distractor_rationale())) {             
                 $feedbackOptions['general_feedback'] = $metadata->get_distractor_rationale();
             }
         }
         $possibleResponses = $question->get_group_possible_responses();
-             //   var_dump($possibleResponses);die;
+             //var_dump($possibleResponses);die;
         foreach ($possibleResponses as $index => $possibleResponse){
             $gapIdentifier = 'POSSIBLE_RESPONSE_' . $index;
             $content = ContentCollectionBuilder::buildBlockStaticCollectionContent(QtiMarshallerUtil::unmarshallElement($possibleResponses));
