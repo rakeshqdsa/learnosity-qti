@@ -14,8 +14,6 @@ use qtism\data\content\BlockStaticCollection;
 use qtism\data\content\interactions\AssociateInteraction;
 use qtism\data\content\interactions\SimpleAssociableChoice;
 use qtism\data\content\interactions\SimpleAssociableChoiceCollection;
-use qtism\data\content\interactions\SimpleMatchSet;
-use qtism\data\content\interactions\SimpleMatchSetCollection;
 use qtism\data\content\TextRun;
 use qtism\data\content\xhtml\text\Div;
 
@@ -24,75 +22,47 @@ class AssociationMapper extends AbstractQuestionTypeMapper
     public function convert(BaseQuestionType $question, $interactionIdentifier, $interactionLabel)
     {
         /** @var association $question */
-        // Is multiple response ?
-        $isMultipleResponses = !empty($question->get_group_possible_responses()) ? $question->get_group_possible_responses() : false;
-        
 
-        $optionCount = count($question->get_group_possible_responses());
-        
-        $stemCount = count($question->get_stimulus_list());
-        // var_dump($stemCount); exit;
-        // Check if distractor_rationale_response_level exists
         $feedbackOptions = [];
         $metadata = $question->get_metadata();
         if (isset($metadata)) {
-            if (!empty($metadata->get_distractor_rationale())) {
+            if (!empty($metadata->get_distractor_rationale())) {             
                 $feedbackOptions['general_feedback'] = $metadata->get_distractor_rationale();
             }
         }
+        $possibleResponses = $question->get_group_possible_responses();
+             //   var_dump($possibleResponses);die;
+        foreach ($possibleResponses as $index => $possibleResponse){
+            $gapIdentifier = 'POSSIBLE_RESPONSE_' . $index;
+            $content = ContentCollectionBuilder::buildBlockStaticCollectionContent(QtiMarshallerUtil::unmarshallElement($possibleResponses));
+            return $gapIdentifier;
+        }
+        $content = ContentCollectionBuilder::buildBlockStaticCollectionContent(QtiMarshallerUtil::unmarshallElement($possibleResponses));
 
-        // // Append the two sets of choices, the first set defines the source choices and the second set the targets
-        // $simpleMatchCollection = new SimpleMatchSetCollection();
-        // list($stemCollection, $stemIndexIdentifierMap) = $this->buildStemCollection($question, $isMultipleResponses, $optionCount);
-        // list($optionCollection, $optionIndexIdentifierMap) = $this->buildOptionCollection($question, $stemCount);
-        // $simpleMatchCollection->attach(new SimpleMatchSet($stemCollection));
-        // $simpleMatchCollection->attach(new SimpleMatchSet($optionCollection));
 
-        // // Build the interaction
-        // $interaction = new AssociateInteraction($interactionIdentifier, $simpleMatchCollection);
-        // $interaction->setPrompt($this->convertStimulusForPrompt($question->get_stimulus()));
-        // $interaction->setLabel($interactionLabel);
-        // $interaction->setShuffle(true); // Support for shuffling
+        $associableChoices = new SimpleAssociableChoiceCollection();
+        $stimulusLists = $question->get_stimulus_list();
+        //var_dump($stimulusLists);die;
+        $matchMax = $question->get_duplicate_responses() ? count($stimulusLists) : 1;
+        foreach ($stimulusLists as $index => $stimulusList) {
+            $associableChoice = new SimpleAssociableChoice('STIMULUS_LIST_' . $index, $matchMax);
+            $associableChoice->setContent(ContentCollectionBuilder::buildFlowStaticCollectionContent(QtiMarshallerUtil::unmarshallElement($stimulusList)));
+          //  $associableChoiceContent = new TextOrVariableCollection();
+            //$associableChoiceContent->attach($associableChoice);
+          //  $associableChoice->setContent($associableChoiceContent);
+            $associableChoices->attach($associableChoice);
+        }
+        
+        $interaction = new AssociateInteraction($interactionIdentifier, $associableChoices, $content);
+     //var_dump($interaction);die;
+        $interaction->setLabel($interactionLabel);
+        $interaction->setPrompt($this->convertStimulusForPrompt($question->get_stimulus()));
+        $interaction->setShuffle($question->get_shuffle_options() ? true : false);
 
-        // // If multiple response set then student is allowed to put 1 association (tick 1 box) or (optionCount * stemCount) association (tick all the boxes)
-        // // $interaction->setMaxAssociations($isMultipleResponses ? ($optionCount * $stemCount) : $stemCount);
-        // // $interaction->setMinAssociations($isMultipleResponses ? 1 : $stemCount);
-
-        // $builder = new AssociationValidationBuilder($stemIndexIdentifierMap, $optionIndexIdentifierMap);
-        // list($responseDeclaration, $responseProcessing) = $builder->buildValidation($interactionIdentifier, $question->get_validation(), 1, $feedbackOptions);
+        $builder = new AssociationValidationBuilder($possibleResponses);
+        list($responseDeclaration, $responseProcessing) = $builder->buildValidation($interactionIdentifier, $question->get_validation(), 1, $feedbackOptions);
 
         return [$interaction, $responseDeclaration, $responseProcessing];
     }
 
-    private function buildStemCollection(association $question, $isMultipleResponses, $optionCount, $feedbackOptions = array())
-    {
-        $stemIndexIdentifierMap = [];
-        $stemCollection = new SimpleAssociableChoiceCollection();
-        foreach ($question->get_stems() as $key => $stemValue) {
-            // Learnosity's 'association' always have its stem to have a max of 1 associable choice (unless it's multiple response)
-            // Also, it won't validate upon empty response, thus setting match min to 1
-            $stemChoice = new SimpleAssociableChoice('STEM_' . $key, $isMultipleResponses ? $optionCount : 1);
-            $stemChoice->setMatchMin(1);
-            $stemChoice->setContent(ContentCollectionBuilder::buildFlowStaticCollectionContent(QtiMarshallerUtil::unmarshallElement($stemValue)));
-            $stemCollection->attach($stemChoice);
-            $stemIndexIdentifierMap[$key] = $stemChoice->getIdentifier();
-        }
-        return [$stemCollection, $stemIndexIdentifierMap];
-    }
-
-    private function buildOptionCollection(association $question, $stemCount)
-    {
-        $optionIndexIdentifierMap = [];
-        $optionCollection = new SimpleAssociableChoiceCollection();
-        foreach ($question->get_options() as $key => $optionValue) {
-            // Learnosity's `association` always have its options to have any number of associable choice, thus setting to stems count
-            // Same as above, won't validate upon empty response, thus setting match min to 1
-            $optionChoice = new SimpleAssociableChoice('OPTION_' . $key, $stemCount);
-            $optionChoice->setMatchMin(1);
-            $optionChoice->setContent(ContentCollectionBuilder::buildFlowStaticCollectionContent(QtiMarshallerUtil::unmarshallElement($optionValue)));
-            $optionCollection->attach($optionChoice);
-            $optionIndexIdentifierMap[$key] = $optionChoice->getIdentifier();
-        }
-        return [$optionCollection, $optionIndexIdentifierMap];
-    }
 }
