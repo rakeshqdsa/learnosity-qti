@@ -42,7 +42,6 @@ class AssociationValidationBuilder extends AbstractQuestionValidationBuilder
 
     private function buildValueCollection(array $learnosityValues)
     {
-        // The validation in `association` relies on its key to describe the index of stem/option pair
         $valueCollection = new ValueCollection();
         foreach ($this->buildQtiPairs($learnosityValues) as $pair) {
             $valueCollection->attach(new Value($pair));
