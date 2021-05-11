@@ -123,10 +123,17 @@ class ImageclozeassociationV2Mapper extends AbstractQuestionTypeMapper
 
         $learnosityService = ConvertToQtiService::getInstance();
         $inputPath = $learnosityService->getInputPath();
+        
         $imageRealPath = str_replace("/vendor/learnosity/itembank",$inputPath, $imageSrc); 
+        
+        $imgData = file_get_contents($imageRealPath);
+        $imagedata = 'data:image/png;base64,' . base64_encode($imgData);
+        
+        $outPutPathForQti = str_replace("/vendor/learnosity/itembank/assets", "images", $imageSrc);
         //list($imageWidth, $imageHeight) = CurlUtil::getImageSize(CurlUtil::prepareUrlForCurl($imageSrc));
         list($imageWidth, $imageHeight) = getimagesize(($imageRealPath));
-        $imageObject = new ObjectElement($imageSrc, MimeUtil::guessMimeType($imageSrc));
+        
+        $imageObject = new ObjectElement($imagedata, MimeUtil::guessMimeType($imageSrc));
         $imageObject->setWidth($imageWidth);
         $imageObject->setHeight($imageHeight);
 
@@ -138,6 +145,7 @@ class ImageclozeassociationV2Mapper extends AbstractQuestionTypeMapper
         }
         return $imageObject;
     }
+
 
     private function convertTextToObjectWithBase64ImageString($text)
     {
