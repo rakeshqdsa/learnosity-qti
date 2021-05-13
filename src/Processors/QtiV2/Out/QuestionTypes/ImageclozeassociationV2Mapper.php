@@ -126,14 +126,14 @@ class ImageclozeassociationV2Mapper extends AbstractQuestionTypeMapper
         
         $imageRealPath = str_replace("/vendor/learnosity/itembank",$inputPath, $imageSrc); 
         
-        $imgData = file_get_contents($imageRealPath);
-        $imagedata = 'data:image/png;base64,' . base64_encode($imgData);
+        //$imgData = file_get_contents($imageRealPath);
+        //$imagedata = 'data:image/png;base64,' . base64_encode($imgData);
         
-        $outPutPathForQti = str_replace("/vendor/learnosity/itembank/assets", "images", $imageSrc);
+        $outPutPathForQti = str_replace("/vendor/learnosity/itembank/assets", "../images", $imageSrc);
         //list($imageWidth, $imageHeight) = CurlUtil::getImageSize(CurlUtil::prepareUrlForCurl($imageSrc));
         list($imageWidth, $imageHeight) = getimagesize(($imageRealPath));
         
-        $imageObject = new ObjectElement($imagedata, MimeUtil::guessMimeType($imageSrc));
+        $imageObject = new ObjectElement($outPutPathForQti, MimeUtil::guessMimeType($imageSrc));
         $imageObject->setWidth($imageWidth);
         $imageObject->setHeight($imageHeight);
 

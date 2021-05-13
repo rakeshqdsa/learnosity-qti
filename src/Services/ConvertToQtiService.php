@@ -718,11 +718,7 @@ class ConvertToQtiService
     private function getAdditionalFileInfoForManifestResource(array $results)
     {
         $additionalFileInfoArray = array();
-        if(!file_exists($this->inputPath . '/manifest.json')) {
-            return $additionalFileInfoArray;
-        }
         $learnosityManifestJson = json_decode(file_get_contents($this->inputPath . '/manifest.json'));
-        
         if (isset($learnosityManifestJson->assets->items)) {
             $activityArray = $learnosityManifestJson->assets->items;
             foreach ($activityArray as $itemReference => $itemValue) {
